@@ -17,16 +17,17 @@ class ImageViewer(tk.Tk):
         # file menu
         file_menu = tk.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open", command=self.open_image)
-        file_menu.add_command(label="Save", command=self.save_image)
-        file_menu.add_command(label="Exit", command=self.quit)
+        file_menu.add_command(label="Open", command=self.open_image, accelerator="Ctrl+N")
+        file_menu.add_command(label="Save", command=self.save_image, accelerator="Ctrl+S")
+        file_menu.add_command(label="Exit", command=self.quit, accelerator="Alt+F4")
 
         # edit menu
         edit_menu = tk.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Edit", menu=edit_menu)
-        edit_menu.add_command(label="Rotate Right", command=self.rotate_right)
-        edit_menu.add_command(label="Rotate Left", command=self.rotate_left)
-        edit_menu.add_command(label="Crop", command=self.start_crop)
+        edit_menu.add_command(label="Crop", command=self.start_crop, accelerator="F2")
+        edit_menu.add_command(label="Rotate Right", command=self.rotate_right, accelerator="Ctrl+Shift+R")
+        edit_menu.add_command(label="Rotate Left", command=self.rotate_left, accelerator="Ctrl+R")
+
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
         edit_menu.add_command(label="Redo", command=self.redo, accelerator="Ctrl+Y")
         
@@ -42,7 +43,8 @@ class ImageViewer(tk.Tk):
         self.history_index = -1
 
         # Keyboard shortcuts
-        self.bind_all("<Control-o>", self.open_image)
+        self.bind_all("<Control-n>", self.open_image)
+        self.bind_all("Control-KeyPress>", self.start_crop)
         self.bind_all("<Control-s>", self.save_image)
         self.bind_all("<Alt-F4>", self.quit)
         self.bind_all("<Control-Shift-R>", self.rotate_right)
@@ -104,11 +106,12 @@ class ImageViewer(tk.Tk):
 
     def show_shortcuts(self):
         shortcuts_info = (
-            "Ctrl+O - Open Image\n"
+            "Ctrl+N - Open Image\n"
             "Ctrl+S - Save Image\n"
             "Alt+F4 - Exit\n"
             "Ctrl+Shift+R - Rotate Right\n"
             "Ctrl+R - Rotate Left\n"
+            "F2 Crop\n"
             "Ctrl+Z - Undo\n"
             "Ctrl+Y - Redo"
         )
@@ -156,6 +159,7 @@ class ImageViewer(tk.Tk):
             self.canvas.unbind("<B1-Motion>")
             self.canvas.unbind("<ButtonRelease-1>")
             self.save_to_history()
+            self.update_image()
 
     def save_to_history(self):
         if self.original_image is not None:
