@@ -43,12 +43,12 @@ class ImageViewer(tk.Tk):
         self.history_index = -1
 
         # Keyboard shortcuts
-        self.bind_all("<Control-n>", self.open_image)
-        self.bind_all("Control-KeyPress>", self.start_crop)
+        self.bind_all("<Control-n>",  self.open_image)
+        self.bind_all("<c>",  self.start_crop)
         self.bind_all("<Control-s>", self.save_image)
-        self.bind_all("<Alt-F4>", self.quit)
-        self.bind_all("<Control-Shift-R>", self.rotate_right)
-        self.bind_all("<Control-R>", self.rotate_left)
+        self.bind_all("<Alt-F4>",self.quit)
+        self.bind_all("<Control-Shift-r>", self.rotate_right)
+        self.bind_all("<Control-r>", self.rotate_left)
         self.bind_all("<Control-z>", self.undo)
         self.bind_all("<Control-y>", self.redo)
 
