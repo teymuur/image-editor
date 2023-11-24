@@ -1,6 +1,7 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk, ImageDraw
+from tkinter import filedialog, messagebox,Scale
+from PIL import Image, ImageTk, ImageEnhance
+import tkinter.simpledialog
 
 class ImageViewer(tk.Tk):
     def __init__(self):
@@ -24,9 +25,11 @@ class ImageViewer(tk.Tk):
         # edit menu
         edit_menu = tk.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Edit", menu=edit_menu)
-        edit_menu.add_command(label="Crop", command=self.start_crop, accelerator="F2")
-        edit_menu.add_command(label="Rotate Right", command=self.rotate_right, accelerator="Ctrl+Shift+R")
-        edit_menu.add_command(label="Rotate Left", command=self.rotate_left, accelerator="Ctrl+R")
+        edit_menu.add_command(label="Rotate Right", command=self.rotate_right)
+        edit_menu.add_command(label="Rotate Left", command=self.rotate_left)
+        edit_menu.add_command(label="Crop", command=self.start_crop)
+        edit_menu.add_command(label="Adjustments", command=self.open_adjustments_dialog)  # New option for adjustments
+
 
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
         edit_menu.add_command(label="Redo", command=self.redo, accelerator="Ctrl+Y")
@@ -44,7 +47,7 @@ class ImageViewer(tk.Tk):
 
         # Keyboard shortcuts
         self.bind_all("<Control-n>",  self.open_image)
-        self.bind_all("<c>",  self.start_crop)
+
         self.bind_all("<Control-s>", self.save_image)
         self.bind_all("<Alt-F4>",self.quit)
         self.bind_all("<Control-Shift-r>", self.rotate_right)
@@ -171,6 +174,25 @@ class ImageViewer(tk.Tk):
             self.image_history.append(self.original_image.copy())
             self.history_index = len(self.image_history) - 1
 
+    def open_adjustments_dialog(self, event=None):
+        adjustments_dialog = PhotoAdjustmentDialog(self, title="Photo Adjustments")
+        adjustments_dialog.viewer = self
+        adjustments_dialog.transient(self)
+        adjustments_dialog.wait_window()
+
+    def adjust_brightness(self, brightness_factor):
+        if hasattr(self, 'original_image'):
+            enhanced_image = ImageEnhance.Brightness(self.original_image).enhance(float(brightness_factor))
+            self.original_image = enhanced_image.copy()
+            self.save_to_history()
+            self.update_image()
+
+    def adjust_contrast(self, contrast_factor):
+        if hasattr(self, 'original_image'):
+            enhanced_image = ImageEnhance.Contrast(self.original_image).enhance(float(contrast_factor))
+            self.original_image = enhanced_image.copy()
+            self.save_to_history()
+            self.update_image()
     def undo(self, event=None):
         if self.history_index > 0:
             self.history_index -= 1
@@ -183,6 +205,41 @@ class ImageViewer(tk.Tk):
             self.history_index += 1
             self.original_image = self.image_history[self.history_index].rotate(-90 * self.rotation_count)
             self.update_image()
+
+
+class PhotoAdjustmentDialog(tk.Toplevel):
+    def __init__(self, parent, title):
+        super().__init__(parent)
+        self.title(title)
+        self.geometry("300x150")
+
+        self.create_slider("Brightness:", from_=0.1, to=2.0, default=1.0, command=self.adjust_brightness)
+        self.create_slider("Contrast:", from_=0.1, to=2.0, default=1.0, command=self.adjust_contrast)
+
+        self.confirm_button = tk.Button(self, text="OK", command=self.confirm)
+        self.confirm_button.pack(pady=10)
+
+    def create_slider(self, label_text, from_, to, default, command):
+        label = tk.Label(self, text=label_text)
+        label.pack(pady=5)
+
+        slider = Scale(self, from_=from_, to=to, resolution=0.1, orient="horizontal", length=200, command=command)
+        slider.set(default)
+        slider.pack(pady=5)
+
+    def adjust_brightness(self, value):
+        if hasattr(self, 'viewer'):
+            enhanced_image = ImageEnhance.Brightness(self.viewer.original_image).enhance(float(value))
+            self.viewer.display_image(enhanced_image)
+
+    def adjust_contrast(self, value):
+        if hasattr(self, 'viewer'):
+            enhanced_image = ImageEnhance.Contrast(self.viewer.original_image).enhance(float(value))
+            self.viewer.display_image(enhanced_image)
+
+    def confirm(self):
+        self.destroy()
+
 
 
 
