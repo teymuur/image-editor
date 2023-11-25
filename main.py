@@ -114,7 +114,6 @@ class ImageViewer(tk.Tk):
             "Alt+F4 - Exit\n"
             "Ctrl+Shift+R - Rotate Right\n"
             "Ctrl+R - Rotate Left\n"
-            "F2 Crop\n"
             "Ctrl+Z - Undo\n"
             "Ctrl+Y - Redo"
         )
