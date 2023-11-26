@@ -114,6 +114,7 @@ class ImageViewer(tk.Tk):
             "Alt+F4 - Exit\n"
             "Ctrl+Shift+R - Rotate Right\n"
             "Ctrl+R - Rotate Left\n"
+
             "Ctrl+Z - Undo\n"
             "Ctrl+Y - Redo"
         )
@@ -179,19 +180,20 @@ class ImageViewer(tk.Tk):
         adjustments_dialog.transient(self)
         adjustments_dialog.wait_window()
 
+    def display_image(self, image):
+        photo = ImageTk.PhotoImage(image)
+        self.image_label.config(image=photo)
+        self.image_label.image = photo
+
     def adjust_brightness(self, brightness_factor):
         if hasattr(self, 'original_image'):
             enhanced_image = ImageEnhance.Brightness(self.original_image).enhance(float(brightness_factor))
-            self.original_image = enhanced_image.copy()
-            self.save_to_history()
-            self.update_image()
+            self.display_image(enhanced_image)
 
     def adjust_contrast(self, contrast_factor):
         if hasattr(self, 'original_image'):
             enhanced_image = ImageEnhance.Contrast(self.original_image).enhance(float(contrast_factor))
-            self.original_image = enhanced_image.copy()
-            self.save_to_history()
-            self.update_image()
+            self.display_image(enhanced_image)
     def undo(self, event=None):
         if self.history_index > 0:
             self.history_index -= 1
@@ -207,6 +209,38 @@ class ImageViewer(tk.Tk):
 
 
 class PhotoAdjustmentDialog(tk.Toplevel):
+    def __init__(self, parent, title):
+        super().__init__(parent)
+        self.title(title)
+        self.geometry("300x150")
+
+        self.create_slider("Brightness:", from_=0.1, to=2.0, default=1.0, command=self.adjust_brightness)
+        self.create_slider("Contrast:", from_=0.1, to=2.0, default=1.0, command=self.adjust_contrast)
+
+        self.confirm_button = tk.Button(self, text="OK", command=self.confirm)
+        self.confirm_button.pack(pady=10)
+
+    def create_slider(self, label_text, from_, to, default, command):
+        label = tk.Label(self, text=label_text)
+        label.pack(pady=5)
+
+        slider = Scale(self, from_=from_, to=to, resolution=0.1, orient="horizontal", length=200, command=command)
+        slider.set(default)
+        slider.pack(pady=5)
+
+    def adjust_brightness(self, value):
+        if hasattr(self, 'viewer'):
+            enhanced_image = ImageEnhance.Brightness(self.viewer.original_image).enhance(float(value))
+            self.viewer.display_image(enhanced_image)
+
+    def adjust_contrast(self, value):
+        if hasattr(self, 'viewer'):
+            enhanced_image = ImageEnhance.Contrast(self.viewer.original_image).enhance(float(value))
+            self.viewer.display_image(enhanced_image)
+
+    def confirm(self):
+        self.destroy()
+
     def __init__(self, parent, title):
         super().__init__(parent)
         self.title(title)
