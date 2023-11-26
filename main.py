@@ -174,6 +174,7 @@ class ImageViewer(tk.Tk):
             self.image_history.append(self.original_image.copy())
             self.history_index = len(self.image_history) - 1
 
+
     def open_adjustments_dialog(self, event=None):
         adjustments_dialog = PhotoAdjustmentDialog(self, title="Photo Adjustments")
         adjustments_dialog.viewer = self
@@ -181,9 +182,9 @@ class ImageViewer(tk.Tk):
         adjustments_dialog.wait_window()
 
     def display_image(self, image):
-        photo = ImageTk.PhotoImage(image)
-        self.image_label.config(image=photo)
-        self.image_label.image = photo
+        self.displayed_image = ImageTk.PhotoImage(image)
+        self.image_label.config(image=self.displayed_image)
+        self.image_label.image = self.displayed_image
 
     def adjust_brightness(self, brightness_factor):
         if hasattr(self, 'original_image'):
@@ -212,7 +213,7 @@ class PhotoAdjustmentDialog(tk.Toplevel):
     def __init__(self, parent, title):
         super().__init__(parent)
         self.title(title)
-        self.geometry("300x150")
+        self.geometry("300x1500")
 
         self.create_slider("Brightness:", from_=0.1, to=2.0, default=1.0, command=self.adjust_brightness)
         self.create_slider("Contrast:", from_=0.1, to=2.0, default=1.0, command=self.adjust_contrast)
@@ -224,7 +225,9 @@ class PhotoAdjustmentDialog(tk.Toplevel):
         label = tk.Label(self, text=label_text)
         label.pack(pady=5)
 
-        slider = Scale(self, from_=from_, to=to, resolution=0.1, orient="horizontal", length=200, command=command)
+
+        slider = Scale(self, from_=from_, to=to, resolution=0.1, orient="horizontal", length=200, command=lambda val: command(val))
+
         slider.set(default)
         slider.pack(pady=5)
 
@@ -240,39 +243,6 @@ class PhotoAdjustmentDialog(tk.Toplevel):
 
     def confirm(self):
         self.destroy()
-
-    def __init__(self, parent, title):
-        super().__init__(parent)
-        self.title(title)
-        self.geometry("300x150")
-
-        self.create_slider("Brightness:", from_=0.1, to=2.0, default=1.0, command=self.adjust_brightness)
-        self.create_slider("Contrast:", from_=0.1, to=2.0, default=1.0, command=self.adjust_contrast)
-
-        self.confirm_button = tk.Button(self, text="OK", command=self.confirm)
-        self.confirm_button.pack(pady=10)
-
-    def create_slider(self, label_text, from_, to, default, command):
-        label = tk.Label(self, text=label_text)
-        label.pack(pady=5)
-
-        slider = Scale(self, from_=from_, to=to, resolution=0.1, orient="horizontal", length=200, command=command)
-        slider.set(default)
-        slider.pack(pady=5)
-
-    def adjust_brightness(self, value):
-        if hasattr(self, 'viewer'):
-            enhanced_image = ImageEnhance.Brightness(self.viewer.original_image).enhance(float(value))
-            self.viewer.display_image(enhanced_image)
-
-    def adjust_contrast(self, value):
-        if hasattr(self, 'viewer'):
-            enhanced_image = ImageEnhance.Contrast(self.viewer.original_image).enhance(float(value))
-            self.viewer.display_image(enhanced_image)
-
-    def confirm(self):
-        self.destroy()
-
 
 
 
