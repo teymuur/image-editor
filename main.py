@@ -213,7 +213,7 @@ class PhotoAdjustmentDialog(tk.Toplevel):
     def __init__(self, parent, title):
         super().__init__(parent)
         self.title(title)
-        self.geometry("300x500")
+        self.geometry("300x200")
 
         self.create_slider("Brightness:", from_=0.1, to=2.0, default=1.0, command=self.adjust_brightness)
         self.create_slider("Contrast:", from_=0.1, to=2.0, default=1.0, command=self.adjust_contrast)
