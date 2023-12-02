@@ -61,9 +61,9 @@ class ImageViewer(tk.Tk):
         help_menu.add_command(label="Keyboard Shortcuts", command=self.show_shortcuts)
         
 
-                # Create a right frame for adjustments
+        # Create a right frame for adjustments
         self.adjustments_frame = tk.Frame(self)
-        self.adjustments_frame.pack(side=tk.RIGHT, fill=tk.Y)
+        self.adjustments_frame.pack(side=tk.RIGHT, fill=tk.Y, anchor=tk.N)
 
         # Add brightness and contrast sliders
         self.brightness_label = tk.Label(self.adjustments_frame, text="Brightness")
