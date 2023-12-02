@@ -60,11 +60,35 @@ class ImageViewer(tk.Tk):
         help_menu.add_command(label="About", command=self.show_about)
         help_menu.add_command(label="Keyboard Shortcuts", command=self.show_shortcuts)
         
+
+                # Create a right frame for adjustments
+        self.adjustments_frame = tk.Frame(self)
+        self.adjustments_frame.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Add brightness and contrast sliders
+        self.brightness_label = tk.Label(self.adjustments_frame, text="Brightness")
+        self.brightness_slider = Scale(self.adjustments_frame, from_=0.1, to=2.0, resolution=0.1, orient=tk.HORIZONTAL)
+        self.brightness_slider.set(1.0)
+
+        self.contrast_label = tk.Label(self.adjustments_frame, text="Contrast")
+        self.contrast_slider = Scale(self.adjustments_frame, from_=0.1, to=2.0, resolution=0.1, orient=tk.HORIZONTAL)
+        self.contrast_slider.set(1.0)
+
+        self.apply_adjustments_button = tk.Button(self.adjustments_frame, text="Apply Adjustments", command=self.apply_adjustments)
+
+        # Pack adjustments widgets
+        self.brightness_label.pack(pady=(10, 0))
+        self.brightness_slider.pack(pady=(0, 10))
+        self.contrast_label.pack(pady=(10, 0))
+        self.contrast_slider.pack(pady=(0, 10))
+        self.apply_adjustments_button.pack(pady=(10, 0))
+
+
         self.rotation_count = 0
         self.original_image = None
         self.image_history = []
         self.history_index = -1
-        self.adjustments_window = None
+
         # Keyboard shortcuts
         self.bind_all("<Control-n>",  self.open_image)
 
@@ -198,35 +222,24 @@ class ImageViewer(tk.Tk):
             self.adjustments_window = AdjustmentsWindow(self, self.apply_adjustments)
 
     def apply_adjustments(self):
-        if self.adjustments_window:
-            brightness_factor = self.adjustments_window.brightness_slider.get()
-            contrast_factor = self.adjustments_window.contrast_slider.get()
+        # Apply adjustments to the original image
+        brightness_factor = self.brightness_slider.get()
+        contrast_factor = self.contrast_slider.get()
 
-            enhanced_image = self.original_image.copy()
-            enhanced_image = ImageEnhance.Brightness(enhanced_image).enhance(float(brightness_factor))
-            enhanced_image = ImageEnhance.Contrast(enhanced_image).enhance(float(contrast_factor))
+        enhanced_image = self.original_image.copy()
+        enhanced_image = ImageEnhance.Brightness(enhanced_image).enhance(float(brightness_factor))
+        enhanced_image = ImageEnhance.Contrast(enhanced_image).enhance(float(contrast_factor))
 
-            self.original_image = enhanced_image
-            self.update_image()
-            self.save_to_history()
-            self.adjustments_window.destroy()
-            self.adjustments_window = None
-
+        self.original_image = enhanced_image
+        self.update_image()
+        self.save_to_history()
 
     def display_image(self, image):
         self.displayed_image = ImageTk.PhotoImage(image)
         self.image_label.config(image=self.displayed_image)
         self.image_label.image = self.displayed_image
 
-    def adjust_brightness(self, brightness_factor):
-        if hasattr(self, 'original_image'):
-            enhanced_image = ImageEnhance.Brightness(self.original_image).enhance(float(brightness_factor))
-            self.display_image(enhanced_image)
 
-    def adjust_contrast(self, contrast_factor):
-        if hasattr(self, 'original_image'):
-            enhanced_image = ImageEnhance.Contrast(self.original_image).enhance(float(contrast_factor))
-            self.display_image(enhanced_image)
     def undo(self, event=None):
         if self.history_index > 0:
             self.history_index -= 1
