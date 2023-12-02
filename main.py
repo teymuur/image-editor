@@ -64,7 +64,7 @@ class ImageViewer(tk.Tk):
         self.original_image = None
         self.image_history = []
         self.history_index = -1
-
+        self.adjustments_window = None
         # Keyboard shortcuts
         self.bind_all("<Control-n>",  self.open_image)
 
