@@ -62,7 +62,7 @@ class ImageViewer(tk.Tk):
         self.bind_all("<Control-r>", self.rotate_left)
         self.bind_all("<Control-z>", self.undo)
         self.bind_all("<Control-y>", self.redo)
-        self.bind_all("<Control-plus>", self.zoom_in)
+        self.bind_all("<Control-equal>", self.zoom_in)
         self.bind_all("<Control-minus>", self.zoom_out)
 
         # Cropping adjustments
@@ -86,7 +86,7 @@ class ImageViewer(tk.Tk):
             rotated_image = self.display_image.rotate(-90 * self.rotation_count, expand=True)
             resized_image = rotated_image.resize(
                 (int(rotated_image.width * self.zoom_factor), int(rotated_image.height * self.zoom_factor)),
-                Image.ANTIALIAS
+                Image.Resampling.LANCZOS
             )
             photo = ImageTk.PhotoImage(resized_image)
 
