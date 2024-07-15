@@ -1,7 +1,6 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, Scale
+from tkinter import filedialog, messagebox, Scale, Toplevel
 from PIL import Image, ImageTk, ImageEnhance
-
 
 class ImageViewer(tk.Tk):
     def __init__(self):
@@ -13,28 +12,6 @@ class ImageViewer(tk.Tk):
         # Canvas for displaying the image
         self.canvas = tk.Canvas(self)
         self.canvas.pack(expand=True, fill="both")
-
-        # Frame for adjustments on the right side
-        self.adjustments_frame = tk.Frame(self)
-        self.adjustments_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=10)
-
-        # Add brightness and contrast sliders
-        self.brightness_label = tk.Label(self.adjustments_frame, text="Brightness")
-        self.brightness_slider = Scale(self.adjustments_frame, from_=0.1, to=2.0, resolution=0.1, orient=tk.HORIZONTAL)
-        self.brightness_slider.set(1.0)
-
-        self.contrast_label = tk.Label(self.adjustments_frame, text="Contrast")
-        self.contrast_slider = Scale(self.adjustments_frame, from_=0.1, to=2.0, resolution=0.1, orient=tk.HORIZONTAL)
-        self.contrast_slider.set(1.0)
-
-        self.apply_adjustments_button = tk.Button(self.adjustments_frame, text="Apply Adjustments", command=self.apply_adjustments)
-
-        # Pack adjustments widgets
-        self.brightness_label.pack(pady=(10, 0))
-        self.brightness_slider.pack(pady=(0, 10))
-        self.contrast_label.pack(pady=(10, 0))
-        self.contrast_slider.pack(pady=(0, 10))
-        self.apply_adjustments_button.pack(pady=(10, 0))
 
         # Menu bar
         menu_bar = tk.Menu(self)
@@ -55,7 +32,13 @@ class ImageViewer(tk.Tk):
         edit_menu.add_command(label="Crop", command=self.start_crop)
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
         edit_menu.add_command(label="Redo", command=self.redo, accelerator="Ctrl+Y")
-        edit_menu.add_command(label="Adjustments", command=self.show_adjustments)
+        edit_menu.add_command(label="Adjustments", command=self.open_adjustments_window)
+
+        # View menu
+        view_menu = tk.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="View", menu=view_menu)
+        view_menu.add_command(label="Zoom In", command=self.zoom_in, accelerator="Ctrl++")
+        view_menu.add_command(label="Zoom Out", command=self.zoom_out, accelerator="Ctrl+-")
 
         # Help menu
         help_menu = tk.Menu(menu_bar, tearoff=0)
@@ -66,8 +49,10 @@ class ImageViewer(tk.Tk):
         # Attributes for image manipulation
         self.rotation_count = 0
         self.original_image = None
+        self.display_image = None
         self.image_history = []
         self.history_index = -1
+        self.zoom_factor = 1.0
 
         # Keyboard shortcuts
         self.bind_all("<Control-n>", self.open_image)
@@ -77,6 +62,8 @@ class ImageViewer(tk.Tk):
         self.bind_all("<Control-r>", self.rotate_left)
         self.bind_all("<Control-z>", self.undo)
         self.bind_all("<Control-y>", self.redo)
+        self.bind_all("<Control-plus>", self.zoom_in)
+        self.bind_all("<Control-minus>", self.zoom_out)
 
         # Cropping adjustments
         self.cropping = False
@@ -88,14 +75,20 @@ class ImageViewer(tk.Tk):
         if file_path:
             image = Image.open(file_path)
             self.original_image = image.copy()
+            self.display_image = self.original_image.copy()
             self.rotation_count = 0
+            self.zoom_factor = 1.0
             self.update_image()
             self.save_to_history()
 
     def update_image(self):
-        if hasattr(self, 'original_image'):
-            rotated_image = self.original_image.rotate(-90 * self.rotation_count)
-            photo = ImageTk.PhotoImage(rotated_image)
+        if self.display_image:
+            rotated_image = self.display_image.rotate(-90 * self.rotation_count, expand=True)
+            resized_image = rotated_image.resize(
+                (int(rotated_image.width * self.zoom_factor), int(rotated_image.height * self.zoom_factor)),
+                Image.ANTIALIAS
+            )
+            photo = ImageTk.PhotoImage(resized_image)
 
             self.canvas.config(width=photo.width(), height=photo.height())
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
@@ -112,7 +105,7 @@ class ImageViewer(tk.Tk):
         self.save_to_history()
 
     def save_image(self, event=None):
-        if hasattr(self, 'original_image'):
+        if self.display_image:
             file_types = [
                 ("PNG files", "*.png"),
                 ("JPEG files", "*.jpg;*.jpeg"),
@@ -126,7 +119,7 @@ class ImageViewer(tk.Tk):
                 filetypes=file_types
             )
             if file_path:
-                rotated_image = self.original_image.rotate(-90 * self.rotation_count)
+                rotated_image = self.display_image.rotate(-90 * self.rotation_count, expand=True)
                 rotated_image.save(file_path)
                 self.save_to_history()
 
@@ -138,7 +131,9 @@ class ImageViewer(tk.Tk):
             "Ctrl+Shift+R - Rotate Right\n"
             "Ctrl+R - Rotate Left\n"
             "Ctrl+Z - Undo\n"
-            "Ctrl+Y - Redo"
+            "Ctrl+Y - Redo\n"
+            "Ctrl++ - Zoom In\n"
+            "Ctrl+- - Zoom Out"
         )
         messagebox.showinfo("Keyboard Shortcuts", shortcuts_info)
 
@@ -146,13 +141,13 @@ class ImageViewer(tk.Tk):
         about_info = (
             "Image Viewer\n\n"
             "A simple image viewer and editor\n"
-            "Version 1.0\n"
-            "© 2023 Teymur Babayev"
+            "Version 1.4\n"
+            "© 2024 Teymur Babayev"
         )
         messagebox.showinfo("About", about_info)
 
     def start_crop(self):
-        if hasattr(self, 'original_image'):
+        if self.display_image:
             self.cropping = True
             self.canvas.bind("<Button-1>", self.crop_start_position)
             self.canvas.bind("<B1-Motion>", self.crop_drag)
@@ -176,9 +171,10 @@ class ImageViewer(tk.Tk):
             x, y = self.crop_start
             x1, y1 = (event.x, event.y)
 
-            rotated_image = self.original_image.rotate(-90 * self.rotation_count)
+            rotated_image = self.display_image.rotate(-90 * self.rotation_count, expand=True)
             cropped_image = rotated_image.crop((x, y, x1, y1))
             self.original_image = cropped_image
+            self.display_image = self.original_image.copy()
             self.cropping = False
             self.canvas.unbind("<Button-1>")
             self.canvas.unbind("<B1-Motion>")
@@ -187,7 +183,7 @@ class ImageViewer(tk.Tk):
             self.update_image()
 
     def save_to_history(self):
-        if self.original_image is not None:
+        if self.original_image:
             # If we are undoing, discard any redo history beyond the current position
             if self.history_index < len(self.image_history) - 1:
                 self.image_history = self.image_history[:self.history_index + 1]
@@ -196,31 +192,81 @@ class ImageViewer(tk.Tk):
             self.image_history.append(self.original_image.copy())
             self.history_index = len(self.image_history) - 1
 
-    def apply_adjustments(self):
-        if hasattr(self, 'original_image'):
-            brightness_factor = self.brightness_slider.get()
-            contrast_factor = self.contrast_slider.get()
-            adjusted_image = ImageEnhance.Brightness(self.original_image).enhance(brightness_factor)
-            adjusted_image = ImageEnhance.Contrast(adjusted_image).enhance(contrast_factor)
-            self.original_image = adjusted_image
-            self.update_image()
-            self.save_to_history()
-
     def undo(self, event=None):
         if self.history_index > 0:
             self.history_index -= 1
-            self.original_image = self.image_history[self.history_index]
+            self.original_image = self.image_history[self.history_index].copy()
+            self.display_image = self.original_image.copy()
             self.update_image()
 
     def redo(self, event=None):
         if self.history_index < len(self.image_history) - 1:
             self.history_index += 1
-            self.original_image = self.image_history[self.history_index]
+            self.original_image = self.image_history[self.history_index].copy()
+            self.display_image = self.original_image.copy()
             self.update_image()
 
-    def show_adjustments(self):
-        self.adjustments_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=10)
+    def zoom_in(self, event=None):
+        self.zoom_factor *= 1.1
+        self.update_image()
 
+    def zoom_out(self, event=None):
+        self.zoom_factor /= 1.1
+        self.update_image()
+
+    def open_adjustments_window(self):
+        if not self.original_image:
+            messagebox.showerror("Error", "No image loaded.")
+            return
+
+        # Create a new window for adjustments
+        adjustments_window = Toplevel(self)
+        adjustments_window.title("Adjustments")
+
+        brightness_label = tk.Label(adjustments_window, text="Brightness")
+        brightness_slider = Scale(adjustments_window, from_=0.1, to=2.0, resolution=0.1, orient=tk.HORIZONTAL)
+        brightness_slider.set(1.0)
+
+        contrast_label = tk.Label(adjustments_window, text="Contrast")
+        contrast_slider = Scale(adjustments_window, from_=0.1, to=2.0, resolution=0.1, orient=tk.HORIZONTAL)
+        contrast_slider.set(1.0)
+
+        saturation_label = tk.Label(adjustments_window, text="Saturation")
+        saturation_slider = Scale(adjustments_window, from_=0.1, to=2.0, resolution=0.1, orient=tk.HORIZONTAL)
+        saturation_slider.set(1.0)
+
+        sharpness_label = tk.Label(adjustments_window, text="Sharpness")
+        sharpness_slider = Scale(adjustments_window, from_=0.1, to=2.0, resolution=0.1, orient=tk.HORIZONTAL)
+        sharpness_slider.set(1.0)
+
+        apply_adjustments_button = tk.Button(adjustments_window, text="Apply Adjustments", command=lambda: self.apply_adjustments(
+            brightness_slider.get(),
+            contrast_slider.get(),
+            saturation_slider.get(),
+            sharpness_slider.get()
+        ))
+
+        # Pack adjustments widgets
+        brightness_label.pack(pady=(10, 0))
+        brightness_slider.pack(pady=(0, 10))
+        contrast_label.pack(pady=(10, 0))
+        contrast_slider.pack(pady=(0, 10))
+        saturation_label.pack(pady=(10, 0))
+        saturation_slider.pack(pady=(0, 10))
+        sharpness_label.pack(pady=(10, 0))
+        sharpness_slider.pack(pady=(0, 10))
+        apply_adjustments_button.pack(pady=(10, 0))
+
+    def apply_adjustments(self, brightness, contrast, saturation, sharpness):
+        if self.original_image:
+            enhanced_image = self.original_image.copy()
+            enhanced_image = ImageEnhance.Brightness(enhanced_image).enhance(brightness)
+            enhanced_image = ImageEnhance.Contrast(enhanced_image).enhance(contrast)
+            enhanced_image = ImageEnhance.Color(enhanced_image).enhance(saturation)
+            enhanced_image = ImageEnhance.Sharpness(enhanced_image).enhance(sharpness)
+            self.display_image = enhanced_image
+            self.update_image()
+            self.save_to_history()
 
 if __name__ == "__main__":
     app = ImageViewer()
