@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, Scale
 from PIL import Image, ImageTk, ImageEnhance
 
+
 class ImageViewer(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -11,7 +12,7 @@ class ImageViewer(tk.Tk):
 
         # Canvas for displaying the image
         self.canvas = tk.Canvas(self)
-        self.canvas.pack(expand="true", fill="both")
+        self.canvas.pack(expand=True, fill="both")
 
         # Frame for adjustments on the right side
         self.adjustments_frame = tk.Frame(self)
@@ -50,7 +51,7 @@ class ImageViewer(tk.Tk):
         edit_menu = tk.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Edit", menu=edit_menu)
         edit_menu.add_command(label="Rotate Right", command=self.rotate_right, accelerator="Ctrl+Shift+R")
-        edit_menu.add_command(label="Rotate Left", command=self.rotate_left, accelerator="Ctrr+$")
+        edit_menu.add_command(label="Rotate Left", command=self.rotate_left, accelerator="Ctrl+R")
         edit_menu.add_command(label="Crop", command=self.start_crop)
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
         edit_menu.add_command(label="Redo", command=self.redo, accelerator="Ctrl+Y")
@@ -93,20 +94,20 @@ class ImageViewer(tk.Tk):
 
     def update_image(self):
         if hasattr(self, 'original_image'):
-            rotated_image = self.original_image.rotate(90 * self.rotation_count)
+            rotated_image = self.original_image.rotate(-90 * self.rotation_count)
             photo = ImageTk.PhotoImage(rotated_image)
 
             self.canvas.config(width=photo.width(), height=photo.height())
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
-            self.canvas.photo = photo
+            self.canvas.image = photo
 
     def rotate_right(self, event=None):
-        self.rotation_count -= 1
+        self.rotation_count += 1
         self.update_image()
         self.save_to_history()
 
     def rotate_left(self, event=None):
-        self.rotation_count += 1
+        self.rotation_count -= 1
         self.update_image()
         self.save_to_history()
 
@@ -125,7 +126,7 @@ class ImageViewer(tk.Tk):
                 filetypes=file_types
             )
             if file_path:
-                rotated_image = self.original_image.rotate(90 * self.rotation_count)
+                rotated_image = self.original_image.rotate(-90 * self.rotation_count)
                 rotated_image.save(file_path)
                 self.save_to_history()
 
@@ -167,8 +168,6 @@ class ImageViewer(tk.Tk):
         x, y = self.crop_start
         x1, y1 = (event.x, event.y)
 
-        # ..., your existing code continued
-
         self.crop_rectangle = self.canvas.create_rectangle(x, y, x1, y1, outline="red", dash=(2, 2))
 
     def crop_end(self, event):
@@ -177,7 +176,7 @@ class ImageViewer(tk.Tk):
             x, y = self.crop_start
             x1, y1 = (event.x, event.y)
 
-            rotated_image = self.original_image.rotate(90 * self.rotation_count)
+            rotated_image = self.original_image.rotate(-90 * self.rotation_count)
             cropped_image = rotated_image.crop((x, y, x1, y1))
             self.original_image = cropped_image
             self.cropping = False
@@ -197,32 +196,30 @@ class ImageViewer(tk.Tk):
             self.image_history.append(self.original_image.copy())
             self.history_index = len(self.image_history) - 1
 
-    def display_image(self, image):
-        self.displayed_image = ImageTk.PhotoImage(image)
-        self.image_label.config(image=self.displayed_image)
-        self.image_label.image = self.displayed_image
-
-    def adjust_brightness(self, brightness_factor):
+    def apply_adjustments(self):
         if hasattr(self, 'original_image'):
-            enhanced_image = ImageEnhance.Brightness(self.original_image).enhance(float(brightness_factor))
-            self.display_image(enhanced_image)
-
-    def adjust_contrast(self, contrast_factor):
-        if hasattr(self, 'original_image'):
-            enhanced_image = ImageEnhance.Contrast(self.original_image).enhance(float(contrast_factor))
-            self.display_image(enhanced_image)
+            brightness_factor = self.brightness_slider.get()
+            contrast_factor = self.contrast_slider.get()
+            adjusted_image = ImageEnhance.Brightness(self.original_image).enhance(brightness_factor)
+            adjusted_image = ImageEnhance.Contrast(adjusted_image).enhance(contrast_factor)
+            self.original_image = adjusted_image
+            self.update_image()
+            self.save_to_history()
 
     def undo(self, event=None):
         if self.history_index > 0:
             self.history_index -= 1
-            self.original_image = self.image_history[self.history_index].rotate(-90 * self.rotation_count)
+            self.original_image = self.image_history[self.history_index]
             self.update_image()
 
     def redo(self, event=None):
         if self.history_index < len(self.image_history) - 1:
             self.history_index += 1
-            self.original_image = self.image_history[self.history_index].rotate(-90 * self.rotation_count)
+            self.original_image = self.image_history[self.history_index]
             self.update_image()
+
+    def show_adjustments(self):
+        self.adjustments_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=10)
 
 
 if __name__ == "__main__":
