@@ -31,7 +31,15 @@ class ImageViewer(tk.Tk):
         edit_menu.add_command(label="Rotate Right", command=self.rotate_right, accelerator="Ctrl+Shift+R")
         edit_menu.add_command(label="Rotate Left", command=self.rotate_left, accelerator="Ctrl+R")
         edit_menu.add_command(label="Crop", command=self.start_crop)
-        edit_menu.add_command(label="Add Text", command=self.add_text, accelerator="Ctrl+T")
+        
+        # Add Elements submenu
+        add_elements_menu = tk.Menu(edit_menu, tearoff=0)
+        edit_menu.add_cascade(label="Add Element", menu=add_elements_menu)
+        add_elements_menu.add_command(label="Add Text", command=self.add_text, accelerator="Ctrl+T")
+        add_elements_menu.add_command(label="Add Rectangle", command=self.add_rectangle)
+        add_elements_menu.add_command(label="Add Circle", command=self.add_circle)
+        add_elements_menu.add_command(label="Add Line", command=self.add_line)
+        
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
         edit_menu.add_command(label="Redo", command=self.redo, accelerator="Ctrl+Y")
         edit_menu.add_command(label="Adjustments", command=self.open_adjustments_window)
@@ -167,7 +175,7 @@ class ImageViewer(tk.Tk):
         about_info = (
             "Image Viewer\n\n"
             "A simple image viewer and editor\n"
-            "Version 1.5\n"
+            "Version 1.5.0-alpha\n"
             "© 2024 Teymur Babayev"
         )
         messagebox.showinfo("About", about_info)
@@ -301,14 +309,16 @@ class ImageViewer(tk.Tk):
         if self.display_image:
             text = simpledialog.askstring("Add Text", "Enter text to add:")
             if text:
-                font_size = 30
+                font_size = simpledialog.askinteger("Font Size", "Enter font size:", initialvalue=30)
                 font = ImageFont.truetype("arial.ttf", font_size)
+                
                 image = self.display_image.copy()
                 draw = ImageDraw.Draw(image)
                 
-                # Calculate text position
-                text_width, text_height = draw.textsize(text, font=font)
-                position = ((image.width - text_width) // 2, (image.height - text_height) // 2)
+                # Ask for text position
+                position_x = simpledialog.askinteger("Position X", "Enter X coordinate for text position:", initialvalue=10)
+                position_y = simpledialog.askinteger("Position Y", "Enter Y coordinate for text position:", initialvalue=10)
+                position = (position_x, position_y)
                 
                 # Draw text on image
                 draw.text(position, text, font=font, fill="white")
@@ -317,6 +327,56 @@ class ImageViewer(tk.Tk):
                 self.display_image = self.original_image.copy()
                 self.update_image()
                 self.save_to_history()
+
+    def add_rectangle(self):
+        if self.display_image:
+            x1 = simpledialog.askinteger("Rectangle", "Enter top-left X coordinate:")
+            y1 = simpledialog.askinteger("Rectangle", "Enter top-left Y coordinate:")
+            x2 = simpledialog.askinteger("Rectangle", "Enter bottom-right X coordinate:")
+            y2 = simpledialog.askinteger("Rectangle", "Enter bottom-right Y coordinate:")
+            color = simpledialog.askstring("Rectangle", "Enter color:", initialvalue="red")
+
+            image = self.display_image.copy()
+            draw = ImageDraw.Draw(image)
+            draw.rectangle([x1, y1, x2, y2], outline=color)
+
+            self.original_image = image
+            self.display_image = self.original_image.copy()
+            self.update_image()
+            self.save_to_history()
+
+    def add_circle(self):
+        if self.display_image:
+            x = simpledialog.askinteger("Circle", "Enter center X coordinate:")
+            y = simpledialog.askinteger("Circle", "Enter center Y coordinate:")
+            radius = simpledialog.askinteger("Circle", "Enter radius:")
+            color = simpledialog.askstring("Circle", "Enter color:", initialvalue="red")
+
+            image = self.display_image.copy()
+            draw = ImageDraw.Draw(image)
+            draw.ellipse([x-radius, y-radius, x+radius, y+radius], outline=color)
+
+            self.original_image = image
+            self.display_image = self.original_image.copy()
+            self.update_image()
+            self.save_to_history()
+
+    def add_line(self):
+        if self.display_image:
+            x1 = simpledialog.askinteger("Line", "Enter start X coordinate:")
+            y1 = simpledialog.askinteger("Line", "Enter start Y coordinate:")
+            x2 = simpledialog.askinteger("Line", "Enter end X coordinate:")
+            y2 = simpledialog.askinteger("Line", "Enter end Y coordinate:")
+            color = simpledialog.askstring("Line", "Enter color:", initialvalue="red")
+
+            image = self.display_image.copy()
+            draw = ImageDraw.Draw(image)
+            draw.line([x1, y1, x2, y2], fill=color)
+
+            self.original_image = image
+            self.display_image = self.original_image.copy()
+            self.update_image()
+            self.save_to_history()
 
     def zoom_in(self, event=None):
         if self.zoom_factor < 2.0:
