@@ -9,9 +9,25 @@ class ImageViewer(tk.Tk):
         self.title("Image Viewer")
         self.geometry("800x600")
 
+        # Frame to hold the canvas and rulers
+        self.frame = tk.Frame(self)
+        self.frame.pack(expand=True, fill="both")
+
         # Canvas for displaying the image
-        self.canvas = tk.Canvas(self)
-        self.canvas.pack(expand=True, fill="both")
+        self.canvas = tk.Canvas(self.frame)
+        self.canvas.grid(row=1, column=1, sticky="nsew")
+
+        # Canvas for the horizontal ruler
+        self.canvas_scale_x = tk.Canvas(self.frame, height=20)
+        self.canvas_scale_x.grid(row=0, column=1, sticky="ew")
+
+        # Canvas for the vertical ruler
+        self.canvas_scale_y = tk.Canvas(self.frame, width=20)
+        self.canvas_scale_y.grid(row=1, column=0, sticky="ns")
+
+        # Configure row and column weights for resizing
+        self.frame.rowconfigure(1, weight=1)
+        self.frame.columnconfigure(1, weight=1)
 
         # Menu bar
         menu_bar = tk.Menu(self)
@@ -106,6 +122,24 @@ class ImageViewer(tk.Tk):
             self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
             self.canvas.image = photo
 
+            self.update_pixel_scale()
+
+    def update_pixel_scale(self):
+        self.canvas_scale_x.delete("all")
+        self.canvas_scale_y.delete("all")
+
+        # Horizontal ruler
+        for i in range(0, int(self.canvas.winfo_width() / self.zoom_factor), 50):
+            x = i * self.zoom_factor
+            self.canvas_scale_x.create_line(x, 0, x, 20, fill="black")
+            self.canvas_scale_x.create_text(x, 10, text=str(i), anchor=tk.N)
+
+        # Vertical ruler
+        for i in range(0, int(self.canvas.winfo_height() / self.zoom_factor), 50):
+            y = i * self.zoom_factor
+            self.canvas_scale_y.create_line(0, y, 20, y, fill="black")
+            self.canvas_scale_y.create_text(10, y, text=str(i), anchor=tk.W)
+
     def rotate_right(self, event=None):
         self.rotation_count += 1
         self.update_image()
@@ -175,7 +209,7 @@ class ImageViewer(tk.Tk):
         about_info = (
             "Image Viewer\n\n"
             "A simple image viewer and editor\n"
-            "Version 1.5.0-alpha\n"
+            "Version 0.6.1-alpha\n"
             "© 2024 Teymur Babayev"
         )
         messagebox.showinfo("About", about_info)
